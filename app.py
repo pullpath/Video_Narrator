@@ -7,11 +7,9 @@ from moviepy.editor import VideoFileClip, AudioFileClip
 from moviepy.audio.io.AudioFileClip import AudioFileClip
 import tempfile
 import cv2
-import base64
 from openai import OpenAI
 import io
 import numpy as np
-from dotenv import load_dotenv
 
 load_dotenv()
  
