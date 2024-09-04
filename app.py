@@ -161,7 +161,7 @@ def merge_audio_video(video_filename, audio_filename, output_filename):
 
     # Write the result to a file (without audio)
     final_clip.write_videofile(
-        output_filename, codec='libx264', audio_codec='aac')
+        output_filename, codec='libx264', audio_codec='aac', threads=14)
 
     # Close the clips
     video_clip.close()
