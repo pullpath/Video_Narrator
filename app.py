@@ -95,13 +95,11 @@ def frames_to_story(base64Frames, prompt):
             ],
         },
     ]
-    print(PROMPT_MESSAGES)
     result = client.chat.completions.create(
         messages=PROMPT_MESSAGES,
         model="gpt-4o-mini",
         max_tokens=500,
     )
-    print(result.choices[0].message.content)
     return result.choices[0].message.content
 
 def text_to_audio(text):
