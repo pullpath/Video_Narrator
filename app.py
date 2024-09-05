@@ -34,7 +34,7 @@ def main():
 
             # End of the commented section
             base64Frames, video_filename, video_duration  = video_to_frame(uploaded_file)
-            est_word_count = np.ceil(video_duration * 2)
+            est_word_count = np.ceil(video_duration * 2.5)
             final_prompt = prompt + f"(This video is ONLY {video_duration} seconds long, so make sure the voice over MUST be able to be explained in less than {est_word_count} words)"
             print(final_prompt)
             video_script = frames_to_story(base64Frames=base64Frames, prompt=final_prompt)
