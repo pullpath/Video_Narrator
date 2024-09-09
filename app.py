@@ -22,6 +22,14 @@ def main():
     if uploaded_file is not None:
         st.video(uploaded_file)
         prompt = st.text_area("Prompt", value="These are frames of a video. Create a short voiceover script that can be used along this video. No extra text is needed in your response, just the script itself.")
+        
+        voice = st.selectbox(
+            "Pick the voice for your generated video",
+            ("alloy", "echo", "fable", "onyx", "nova", "shimmer"),
+            index=0,
+            placeholder="Pick a voice"
+        )
+
 
     if st.button('Generate', type="primary") and uploaded_file is not None:
         with st.spinner('Processing...'):
@@ -41,7 +49,7 @@ def main():
 
             st.write(video_script)
             # Generate audio from text
-            audio_filename, audio_bytes_io = text_to_audio(video_script)
+            audio_filename, audio_bytes_io = text_to_audio(video_script, voice)
 
             # Merge audio and video
             output_video_filename = os.path.splitext(video_filename)[0] + '_output.mp4'
@@ -102,7 +110,7 @@ def frames_to_story(base64Frames, prompt):
     )
     return result.choices[0].message.content
 
-def text_to_audio(text):
+def text_to_audio(text, voice):
     response = requests.post(
         f"{os.environ['OPENAI_API_BASE']}audio/speech",
         headers={
@@ -112,7 +120,7 @@ def text_to_audio(text):
         json={
             "model": "tts-1",
             "input": text,
-            "voice": "onyx",
+            "voice": voice,
         },
     )
 
