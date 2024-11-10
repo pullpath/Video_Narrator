@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import os
 from moviepy.editor import VideoFileClip, AudioFileClip
 from moviepy.audio.io.AudioFileClip import AudioFileClip
+from streamlit.delta_generator import DeltaGenerator
 import tempfile
 import cv2
 from openai import OpenAI
@@ -30,9 +31,9 @@ def main():
             placeholder="Pick a voice"
         )
 
-
     if st.button('Generate', type="primary") and uploaded_file is not None:
         with st.spinner('Processing...'):
+            log_area = st.empty()
             # Comment out the following section, which used to be put all logics in python based ai server
 
             # url = "http://localhost:8000/api/video_narrator"
@@ -41,19 +42,23 @@ def main():
             # st.video(json_result['video'])
 
             # End of the commented section
-            base64Frames, video_filename, video_duration  = video_to_frame(uploaded_file)
+            base64Frames, video_filename, video_duration  = video_to_frame(uploaded_file, log_area)
             est_word_count = np.ceil(video_duration * 2.5)
             final_prompt = prompt + f"(This video is ONLY {video_duration} seconds long, so make sure the voice over MUST be able to be explained in less than {est_word_count} words)"
             print(final_prompt)
-            video_script = frames_to_story(base64Frames=base64Frames, prompt=final_prompt)
+            video_script = frames_to_story(base64Frames=base64Frames, prompt=final_prompt, log_area=log_area)
+
+            log_area.markdown("Script been generated")
 
             st.write(video_script)
+            log_area.markdown("Generating audio from the script...")
             # Generate audio from text
             audio_filename, audio_bytes_io = text_to_audio(video_script, voice)
+            log_area.markdown("Audio generated")
 
             # Merge audio and video
             output_video_filename = os.path.splitext(video_filename)[0] + '_output.mp4'
-            final_video_filename = merge_audio_video(video_filename, audio_filename, output_video_filename)
+            final_video_filename = merge_audio_video(video_filename, audio_filename, output_video_filename, log_area)
 
             # Display the result
             st.video(final_video_filename)
@@ -64,12 +69,13 @@ def main():
             os.unlink(final_video_filename)
 
 
-def video_to_frame(video_file):
+def video_to_frame(video_file, log_area: DeltaGenerator):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmpfile:
         tmpfile.write(video_file.read())
         video_filename = tmpfile.name
 
     video_duration = VideoFileClip(video_filename).duration
+    log_area.markdown(f"Get Video duration: {video_duration} seconds, start reading video frames...")
 
     video = cv2.VideoCapture(video_filename)
     base64_frames = []
@@ -83,10 +89,10 @@ def video_to_frame(video_file):
         base64_frames.append(base64.b64encode(buffer).decode('utf-8'))
 
     video.release()
-    print(len(base64_frames), "frames read.")
+    log_area.markdown(f"Read {len(base64_frames)} frames.")
     return base64_frames, video_filename, video_duration
 
-def frames_to_story(base64Frames, prompt):
+def frames_to_story(base64Frames, prompt, log_area: DeltaGenerator):
     client = OpenAI(
         # This is the default and can be omitted
         api_key=os.environ.get("OPENAI_API_KEY"),
@@ -103,6 +109,7 @@ def frames_to_story(base64Frames, prompt):
             ],
         },
     ]
+    log_area.markdown("Generating script, sending request to OpenAI...")
     result = client.chat.completions.create(
         messages=PROMPT_MESSAGES,
         model="gpt-4o-mini",
@@ -153,18 +160,21 @@ def text_to_audio(text, voice):
 
     return audio_filename, audio_bytes_io
 
-def merge_audio_video(video_filename, audio_filename, output_filename):
-    print("Merging audio and video...")
-    print("Video filename:", video_filename)
-    print("Audio filename:", audio_filename)
+def merge_audio_video(video_filename, audio_filename, output_filename, log_area: DeltaGenerator):
+    log_area.markdown("Merging audio and video...")
+    log_area.markdown("Video filename: " + video_filename)
+    log_area.markdown("Audio filename: " + audio_filename)
 
     # Load the video file
+    log_area.markdown("Loading video file...")
     video_clip = VideoFileClip(video_filename)
 
     # Load the audio file
+    log_area.markdown("Loading audio file...")
     audio_clip = AudioFileClip(audio_filename)
 
     # Set the audio of the video clip as the audio file
+    log_area.markdown("Setting audio into video...")
     final_clip = video_clip.set_audio(audio_clip)
 
     # Write the result to a file (without audio)
@@ -175,7 +185,7 @@ def merge_audio_video(video_filename, audio_filename, output_filename):
     video_clip.close()
     audio_clip.close()
 
-    print('Output filename:', output_filename)
+    log_area.markdown("Merging completed")
     # Return the path to the new video file
     return output_filename
 
