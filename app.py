@@ -33,7 +33,7 @@ def main():
 
     if st.button('Generate', type="primary") and uploaded_file is not None:
         with st.spinner('Processing...'):
-            log_area = st.empty()
+            log_area = st.container(border=True)
             # Comment out the following section, which used to be put all logics in python based ai server
 
             # url = "http://localhost:8000/api/video_narrator"
@@ -187,6 +187,7 @@ def merge_audio_video(video_filename, audio_filename, output_filename, log_area:
 
     log_area.markdown("Merging completed")
     # Return the path to the new video file
+    log_area.balloons()
     return output_filename
 
 if __name__ == "__main__":
